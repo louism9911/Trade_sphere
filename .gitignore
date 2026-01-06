@@ -26,3 +26,9 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Azure / backend (CW2)
+local.settings.json
+connections.json
+*.zip
+
