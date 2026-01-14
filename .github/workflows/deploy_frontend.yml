@@ -2,28 +2,54 @@ name: Deploy Frontend to Azure Storage Static Website
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
     paths:
       - "frontend/**"
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Azure Login
-        uses: azure/login@v2
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: Upload to $web
+      - name: Write frontend runtime config
+        shell: bash
+        env:
+          API_LIST_POSTS: ${{ secrets.API_LIST_POSTS }}
+          API_CREATE_POST: ${{ secrets.API_CREATE_POST }}
+          API_GET_POST_BASE: ${{ secrets.API_GET_POST_BASE }}
+          API_UPDATE_POST_BASE: ${{ secrets.API_UPDATE_POST_BASE }}
+          API_DELETE_POST_BASE: ${{ secrets.API_DELETE_POST_BASE }}
+          API_MEDIA_SAS_BASE: ${{ secrets.API_MEDIA_SAS_BASE }}
+          API_MEDIA_CONFIRM_BASE: ${{ secrets.API_MEDIA_CONFIRM_BASE }}
         run: |
-          az storage blob upload-batch \
-            --account-name "${{ secrets.STORAGE_ACCOUNT_NAME }}" \
-            --destination '$web' \
-            --source "frontend" \
-            --overwrite true \
-            --auth-mode login
+          python - <<'PY'
+          import json, os
+
+          cfg = {
+              "listPosts": os.environ.get("API_LIST_POSTS", ""),
+              "createPost": os.environ.get("API_CREATE_POST", ""),
+              "getPostBase": os.environ.get("API_GET_POST_BASE", ""),
+              "updatePostBase": os.environ.get("API_UPDATE_POST_BASE", ""),
+              "deletePostBase": os.environ.get("API_DELETE_POST_BASE", ""),
+              "mediaSasBase": os.environ.get("API_MEDIA_SAS_BASE", ""),
+              "mediaConfirmBase": os.environ.get("API_MEDIA_CONFIRM_BASE", ""),
+          }
+
+          with open("frontend/config.runtime.js", "w", encoding="utf-8") as f:
+              f.write("window.__API_CONFIG__ = ")
+              f.write(json.dumps(cfg, indent=2))
+              f.write(";\n")
+          PY
+
+      - name: Upload frontend to $web
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            az storage blob upload-batch \
+              --account-name "${{ secrets.STORAGE_ACCOUNT_NAME }}" \
+              --account-key "${{ secrets.STORAGE_ACCOUNT_KEY }}" \
+              --destination '$web' \
+              --source "frontend" \
+              --overwrite true
