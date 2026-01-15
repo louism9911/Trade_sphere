@@ -563,7 +563,7 @@
     async function uploadImageForPost(postId, file) {
       try {
         // Get SAS URL
-        const url = withId(API.mediaSasBase, postId, '/media_sas');
+        const url = withId(API.mediaSasBase, postId);
         const sasData = await req(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -588,7 +588,7 @@
         }
 
         // Confirm media
-        const confirmUrl = withId(API.mediaConfirmBase, postId, '/media_confirm');
+        const confirmUrl = withId(API.mediaConfirmBase, postId);
         await req(confirmUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -702,7 +702,3 @@
   </script>
 </body>
 </html>
-<-m pip install deployed: Wed Jan 14 05:48:29 UTC 2026 -->
-<-m pip install deployed: Wed Jan 14 06:22:31 UTC 2026 -->
-<-m pip install deployed: Wed Jan 14 06:34:41 UTC 2026 -->
-<-m pip install deployed: Wed Jan 14 06:39:04 UTC 2026 -->
