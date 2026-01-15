@@ -562,13 +562,14 @@
     // Upload Image for Post
     async function uploadImageForPost(postId, file) {
       try {
-        // Get SAS URL - replace {id} placeholder (handles both {id} and %7Bid%7D)
-        const url = API.mediaSasBase.replace('{id}', postId).replace('%7Bid%7D', postId);
+        // Get SAS URL - no need to replace {id} anymore, postId goes in body
+        const url = API.mediaSasBase;
         console.log('Calling media SAS URL:', url); // Debug log
         const sasData = await req(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            postId: postId,  // Send postId in body
             fileName: file.name,
             contentType: file.type || 'application/octet-stream'
           })
@@ -588,12 +589,13 @@
           throw new Error('Failed to upload image');
         }
 
-        // Confirm media
-        const confirmUrl = withId(API.mediaConfirmBase, postId);
+        // Confirm media - no need to use withId, postId goes in body
+        const confirmUrl = API.mediaConfirmBase;
         await req(confirmUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            postId: postId,  // Send postId in body
             mediaUrl: sasData.blobUrl,
             fileName: file.name,
             contentType: file.type || null
