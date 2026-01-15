@@ -392,7 +392,7 @@
     const feedContainer = document.getElementById('feedContainer');
     const statusMessage = document.getElementById('statusMessage');
     const mediaFileInput = document.getElementById('mediaFile');
-    const imagePreview = document.getElementById('imagePreview');
+    const mediaPreview = document.getElementById('mediaPreview');
     const editModal = document.getElementById('editModal');
     const editForm = document.getElementById('editForm');
     const cancelBtn = document.getElementById('cancelBtn');
@@ -571,7 +571,7 @@
 
         showStatus('Post created successfully!');
         createForm.reset();
-        imagePreview.style.display = 'none';
+        mediaPreview.style.display = 'none';
         await loadFeed();
       } catch (error) {
         showStatus('Failed to create post', 'error');
