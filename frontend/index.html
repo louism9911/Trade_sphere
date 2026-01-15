@@ -173,14 +173,15 @@
       white-space: pre-wrap;
     }
 
-    .post-image {
+    .post-media {
       margin: 16px 0;
       border-radius: 8px;
       overflow: hidden;
       background: #f0f0f0;
     }
 
-    .post-image img {
+    .post-media img,
+    .post-media video {
       width: 100%;
       height: auto;
       display: block;
@@ -281,18 +282,20 @@
       color: #6c757d;
     }
 
-    /* Image preview */
-    .image-preview {
+    /* Media preview */
+    .media-preview {
       margin: 16px 0;
       border-radius: 8px;
       overflow: hidden;
       max-height: 300px;
     }
 
-    .image-preview img {
+    .media-preview img,
+    .media-preview video {
       width: 100%;
       display: block;
       object-fit: cover;
+      max-height: 300px;
     }
 
     /* Status messages */
@@ -338,10 +341,10 @@
         <label for="author">Author</label>
         <input type="text" id="author" placeholder="Your name" required />
 
-        <label for="imageFile">Image (optional)</label>
-        <input type="file" id="imageFile" accept="image/*" />
+        <label for="mediaFile">Media (Image or Video - optional)</label>
+        <input type="file" id="mediaFile" accept="image/*,video/*" />
 
-        <div id="imagePreview" class="image-preview" style="display:none;"></div>
+        <div id="mediaPreview" class="media-preview" style="display:none;"></div>
 
         <button type="submit" id="createBtn">Create Post</button>
       </form>
@@ -388,7 +391,7 @@
     const createForm = document.getElementById('createForm');
     const feedContainer = document.getElementById('feedContainer');
     const statusMessage = document.getElementById('statusMessage');
-    const imageFileInput = document.getElementById('imageFile');
+    const mediaFileInput = document.getElementById('mediaFile');
     const imagePreview = document.getElementById('imagePreview');
     const editModal = document.getElementById('editModal');
     const editForm = document.getElementById('editForm');
@@ -472,11 +475,31 @@
       // Debug: log the post to see mediaUrl
       console.log('Rendering post:', post.id, 'mediaUrl:', post.mediaUrl);
 
-      const imageHtml = post.mediaUrl ? `
-        <div class="post-image">
-          <img src="${escapeHtml(post.mediaUrl)}" alt="Post image" onerror="this.parentElement.innerHTML='<p style=padding:20px;text-align:center;color:#999>Image failed to load</p>'" />
-        </div>
-      ` : '';
+      let mediaHtml = '';
+      if (post.mediaUrl) {
+        // Detect media type from URL or filename extension
+        const url = post.mediaUrl.toLowerCase();
+        const isVideo = url.includes('.mp4') || url.includes('.webm') || url.includes('.mov') || 
+                       url.includes('.avi') || url.includes('.mkv') || url.includes('.m4v');
+        
+        if (isVideo) {
+          mediaHtml = `
+            <div class="post-media">
+              <video controls style="max-width:100%;height:auto;">
+                <source src="${escapeHtml(post.mediaUrl)}" type="video/mp4">
+                Your browser does not support the video tag.
+              </video>
+            </div>
+          `;
+        } else {
+          mediaHtml = `
+            <div class="post-media">
+              <img src="${escapeHtml(post.mediaUrl)}" alt="Post media" 
+                   onerror="this.parentElement.innerHTML='<p style=padding:20px;text-align:center;color:#999>Media failed to load</p>'" />
+            </div>
+          `;
+        }
+      }
 
       return `
         <div class="post" data-id="${post.id}">
@@ -487,7 +510,7 @@
             </div>
           </div>
           <div class="post-content">${escapeHtml(post.content)}</div>
-          ${imageHtml}
+          ${mediaHtml}
           <div class="post-actions">
             <button class="secondary edit-btn" data-id="${post.id}">Edit</button>
             <button class="danger delete-btn" data-id="${post.id}">Delete</button>
@@ -530,7 +553,7 @@
         const title = document.getElementById('title').value.trim();
         const content = document.getElementById('content').value.trim();
         const author = document.getElementById('author').value.trim();
-        const imageFile = imageFileInput.files[0];
+        const mediaFile = mediaFileInput.files[0];
 
         // Create post
         const payload = { title, content, author };
@@ -540,10 +563,10 @@
           body: JSON.stringify(payload)
         });
 
-        // Upload image if provided
-        if (imageFile && created.id) {
-          createBtn.textContent = 'Uploading image...';
-          await uploadImageForPost(created.id, imageFile);
+        // Upload media if provided
+        if (mediaFile && created.id) {
+          createBtn.textContent = 'Uploading media...';
+          await uploadImageForPost(created.id, mediaFile);
         }
 
         showStatus('Post created successfully!');
@@ -607,18 +630,33 @@
       }
     }
 
-    // Image Preview
-    imageFileInput.addEventListener('change', (e) => {
+    // Media Preview
+    mediaFileInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
+      const mediaPreview = document.getElementById('mediaPreview');
+      
       if (file) {
+        const fileType = file.type;
         const reader = new FileReader();
+        
         reader.onload = (event) => {
-          imagePreview.innerHTML = `<img src="${event.target.result}" alt="Preview" />`;
-          imagePreview.style.display = 'block';
+          if (fileType.startsWith('image/')) {
+            mediaPreview.innerHTML = `<img src="${event.target.result}" alt="Preview" style="max-width:100%;height:auto;" />`;
+          } else if (fileType.startsWith('video/')) {
+            mediaPreview.innerHTML = `
+              <video controls style="max-width:100%;height:auto;">
+                <source src="${event.target.result}" type="${fileType}">
+                Your browser does not support the video tag.
+              </video>
+            `;
+          } else {
+            mediaPreview.innerHTML = `<p>File selected: ${file.name}</p>`;
+          }
+          mediaPreview.style.display = 'block';
         };
         reader.readAsDataURL(file);
       } else {
-        imagePreview.style.display = 'none';
+        mediaPreview.style.display = 'none';
       }
     });
 
