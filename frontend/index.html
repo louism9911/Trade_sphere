@@ -562,8 +562,8 @@
     // Upload Image for Post
     async function uploadImageForPost(postId, file) {
       try {
-        // Get SAS URL - replace {id} placeholder with actual postId
-        const url = API.mediaSasBase.replace('{id}', postId);
+        // Get SAS URL - replace {id} placeholder (handles both {id} and %7Bid%7D)
+        const url = API.mediaSasBase.replace('{id}', postId).replace('%7Bid%7D', postId);
         console.log('Calling media SAS URL:', url); // Debug log
         const sasData = await req(url, {
           method: 'POST',
